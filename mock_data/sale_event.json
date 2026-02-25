@@ -1,0 +1,43 @@
+{
+  "merchant_id": "MLKJ9876543210",
+  "type": "payment.completed",
+  "event_id": "evt_8f3a2b1c-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "created_at": "2026-02-24T10:42:00Z",
+  "data": {
+    "type": "payment",
+    "id": "pay_ZX9Y8W7V6U5T4S",
+    "object": {
+      "payment": {
+        "id": "pay_ZX9Y8W7V6U5T4S",
+        "location_id": "LMND7X2QKFP93",
+        "order_id": "ord_AB1CD2EF3GH4IJ",
+        "total_money": {
+          "amount": 13998,
+          "currency": "USD"
+        },
+        "line_items": [
+          {
+            "catalog_object_id": "LJCY6ZQNNHBP5A",
+            "sku": "BJM-001-BLU-M",
+            "name": "Classic Denim Jacket - Blue / M",
+            "quantity": "1",
+            "base_price_money": {
+              "amount": 8999,
+              "currency": "USD"
+            }
+          },
+          {
+            "catalog_object_id": "MNBV3XQPPIHC8B",
+            "sku": "WTS-044-WHT-S",
+            "name": "Linen Wrap Top - White / S",
+            "quantity": "1",
+            "base_price_money": {
+              "amount": 4999,
+              "currency": "USD"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

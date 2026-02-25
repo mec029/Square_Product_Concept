@@ -1,0 +1,108 @@
+{
+  "location_map": {
+    "store_042": {
+      "square_location_id": "LMND7X2QKFP93",
+      "name": "Flagship - Michigan Ave"
+    }
+  },
+  "sku_map": {
+    "BJM-001-BLU-M": {
+      "square_catalog_object_id": "LJCY6ZQNNHBP5A",
+      "product_name": "Classic Denim Jacket",
+      "color": "Blue",
+      "size": "M",
+      "price": 89.99
+    },
+    "BJM-001-BLU-L": {
+      "square_catalog_object_id": "LJCY6ZQNNHBP5B",
+      "product_name": "Classic Denim Jacket",
+      "color": "Blue",
+      "size": "L",
+      "price": 89.99
+    },
+    "BJM-001-BLK-S": {
+      "square_catalog_object_id": "LJCY6ZQNNHBP5C",
+      "product_name": "Classic Denim Jacket",
+      "color": "Black",
+      "size": "S",
+      "price": 89.99
+    },
+    "WTS-044-WHT-XS": {
+      "square_catalog_object_id": "MNBV3XQPPIHC8A",
+      "product_name": "Linen Wrap Top",
+      "color": "White",
+      "size": "XS",
+      "price": 49.99
+    },
+    "WTS-044-WHT-S": {
+      "square_catalog_object_id": "MNBV3XQPPIHC8B",
+      "product_name": "Linen Wrap Top",
+      "color": "White",
+      "size": "S",
+      "price": 49.99
+    },
+    "WTS-044-WHT-M": {
+      "square_catalog_object_id": "MNBV3XQPPIHC8C",
+      "product_name": "Linen Wrap Top",
+      "color": "White",
+      "size": "M",
+      "price": 49.99
+    },
+    "CNO-210-GRY-M": {
+      "square_catalog_object_id": "PRST9YLMMJKD2A",
+      "product_name": "Oversized Knit Cardigan",
+      "color": "Grey",
+      "size": "M",
+      "price": 74.99
+    },
+    "CNO-210-GRY-L": {
+      "square_catalog_object_id": "PRST9YLMMJKD2B",
+      "product_name": "Oversized Knit Cardigan",
+      "color": "Grey",
+      "size": "L",
+      "price": 74.99
+    },
+    "CNO-210-GRY-XL": {
+      "square_catalog_object_id": "PRST9YLMMJKD2C",
+      "product_name": "Oversized Knit Cardigan",
+      "color": "Grey",
+      "size": "XL",
+      "price": 74.99
+    },
+    "LGG-330-BLK-S": {
+      "square_catalog_object_id": "QWRT4ZMOOKLE7A",
+      "product_name": "High-Waist Leggings",
+      "color": "Black",
+      "size": "S",
+      "price": 59.99
+    },
+    "LGG-330-BLK-M": {
+      "square_catalog_object_id": "QWRT4ZMOOKLE7B",
+      "product_name": "High-Waist Leggings",
+      "color": "Black",
+      "size": "M",
+      "price": 59.99
+    },
+    "LGG-330-BLK-L": {
+      "square_catalog_object_id": "QWRT4ZMOOKLE7C",
+      "product_name": "High-Waist Leggings",
+      "color": "Black",
+      "size": "L",
+      "price": 59.99
+    },
+    "SWE-502-CRM-S": {
+      "square_catalog_object_id": "BNMK8VPNNGHF1A",
+      "product_name": "Ribbed Crew Sweater",
+      "color": "Cream",
+      "size": "S",
+      "price": 64.99
+    },
+    "SWE-502-CRM-M": {
+      "square_catalog_object_id": "BNMK8VPNNGHF1B",
+      "product_name": "Ribbed Crew Sweater",
+      "color": "Cream",
+      "size": "M",
+      "price": 64.99
+    }
+  }
+}

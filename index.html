@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SquareFlow — AI-Native Stockout Risk Engine</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf7f2;
+    --surface: #ffffff;
+    --surface2: #f4f0e8;
+    --border: #e2d9cc;
+    --border-dark: #c8b99f;
+    --accent: #c4622d;
+    --accent2: #2d6e8e;
+    --accent-light: #f0e4d7;
+    --danger: #b83232;
+    --warn: #b86a1a;
+    --ok: #2d7d52;
+    --text: #1a1410;
+    --text2: #3d3028;
+    --muted: #8c7b6a;
+    --muted-light: #b5a898;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Instrument Sans', sans-serif;
+    --serif: 'Instrument Serif', serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle linen texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='%23faf7f2'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23e8e0d0' opacity='0.3'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23e8e0d0' opacity='0.3'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 40px; position: relative; z-index: 1; }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 0;
+    margin-bottom: 44px;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 0 var(--border), 0 4px 24px rgba(26,20,16,0.04);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 40px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo-wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .logo-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .logo h1 {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .logo-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--border-dark);
+    opacity: 0.5;
+  }
+
+  .logo-sub {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+  }
+
+  .header-meta {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    line-height: 2;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    background: var(--ok);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .stat {
+    background: var(--surface);
+    padding: 24px 28px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    border-radius: 2px;
+  }
+
+  .stat::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .stat:hover::after { transform: scaleX(1); }
+  .stat:hover { box-shadow: 0 4px 20px rgba(26,20,16,0.08); transform: translateY(-1px); }
+
+  .stat-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.ok { color: var(--ok); }
+  .stat-value.accent { color: var(--accent); }
+
+  .stat-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted-light);
+    margin-top: 8px;
+  }
+
+  /* Main layout */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .panel-title span { color: var(--text); }
+
+  .panel-badge {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 3px 10px;
+    letter-spacing: 0.12em;
+    border-radius: 1px;
+  }
+
+  .badge-danger { background: rgba(184,50,50,0.1); color: var(--danger); border: 1px solid rgba(184,50,50,0.25); }
+  .badge-warn { background: rgba(184,106,26,0.1); color: var(--warn); border: 1px solid rgba(184,106,26,0.25); }
+  .badge-ok { background: rgba(45,125,82,0.1); color: var(--ok); border: 1px solid rgba(45,125,82,0.25); }
+  .badge-accent { background: var(--accent-light); color: var(--accent); border: 1px solid rgba(196,98,45,0.3); }
+
+  /* SKU Table */
+  .sku-table { width: 100%; }
+
+  .sku-row {
+    display: grid;
+    grid-template-columns: 2fr 80px 100px 1fr 120px;
+    align-items: center;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+    gap: 16px;
+  }
+
+  .sku-row:hover { background: var(--surface2); }
+  .sku-row.selected { background: var(--accent-light); border-left: 3px solid var(--accent); }
+  .sku-row:last-child { border-bottom: none; }
+
+  .sku-row.header-row {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted-light);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: default;
+    padding: 10px 28px;
+    background: var(--bg);
+  }
+  .sku-row.header-row:hover { background: var(--bg); }
+
+  .sku-name { font-weight: 600; font-size: 14px; color: var(--text2); }
+  .sku-code { font-family: var(--mono); font-size: 10px; color: var(--muted-light); margin-top: 3px; }
+
+  .sku-stock { font-family: var(--serif); font-size: 20px; font-weight: 400; }
+  .sku-velocity { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+
+  /* Risk bar */
+  .risk-bar-wrap { display: flex; align-items: center; gap: 10px; }
+  .risk-bar-bg {
+    flex: 1;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .risk-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(0.4,0,0.2,1);
+  }
+  .risk-pct { font-family: var(--mono); font-size: 12px; font-weight: 500; min-width: 36px; text-align: right; }
+
+  .risk-high { background: var(--danger); }
+  .risk-med { background: var(--warn); }
+  .risk-low { background: var(--ok); }
+
+  /* Action pill */
+  .action-pill {
+    font-family: var(--mono);
+    font-size: 9px;
+    padding: 4px 10px;
+    border-radius: 1px;
+    letter-spacing: 0.1em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Right panel — detail */
+  .detail-panel { display: flex; flex-direction: column; }
+
+  .detail-content { padding: 28px; flex: 1; }
+
+  .detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+    color: var(--muted-light);
+    font-family: var(--mono);
+    font-size: 11px;
+    text-align: center;
+    gap: 12px;
+  }
+
+  .detail-empty .arrow { font-size: 20px; opacity: 0.4; }
+
+  .detail-sku-name {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 400;
+    font-style: italic;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .detail-sku-code { font-family: var(--mono); font-size: 10px; color: var(--muted-light); margin-bottom: 24px; }
+
+  /* Risk score big display */
+  .risk-score-display {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 24px;
+    margin-bottom: 16px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  .risk-score-display::before {
+    content: 'RISK SCORE';
+    position: absolute;
+    top: 12px; left: 16px;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted-light);
+    letter-spacing: 0.2em;
+  }
+
+  .risk-number {
+    font-family: var(--serif);
+    font-size: 80px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-top: 8px;
+  }
+
+  .risk-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    margin-top: 6px;
+  }
+
+  /* Signal grid */
+  .signal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+
+  .signal-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 14px 16px;
+    border-radius: 2px;
+  }
+
+  .signal-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted-light);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .signal-value {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .signal-sub {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted-light);
+    margin-top: 4px;
+  }
+
+  /* AI reasoning box */
+  .reasoning-box {
+    background: var(--accent-light);
+    border: 1px solid rgba(196,98,45,0.2);
+    padding: 18px;
+    margin-bottom: 12px;
+    border-radius: 2px;
+  }
+
+  .reasoning-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+  }
+
+  .reasoning-text {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text2);
+    font-weight: 400;
+  }
+
+  /* Recommendation */
+  .recommendation {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 18px;
+    border-radius: 2px;
+  }
+
+  .rec-label {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent2);
+    letter-spacing: 0.2em;
+    margin-bottom: 10px;
+  }
+
+  .rec-action {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .rec-detail {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .confidence-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+
+  .conf-label { font-family: var(--mono); font-size: 9px; color: var(--muted-light); letter-spacing: 0.12em; }
+  .conf-track { flex: 1; height: 2px; background: var(--border); }
+  .conf-fill { height: 100%; background: var(--accent2); transition: width 0.8s ease; }
+  .conf-pct { font-family: var(--mono); font-size: 10px; color: var(--accent2); }
+
+  /* Simulator panel */
+  .simulator {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 28px 36px;
+    margin-bottom: 12px;
+  }
+
+  .sim-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sim-icon {
+    width: 32px;
+    height: 32px;
+    background: var(--accent-light);
+    border: 1px solid rgba(196,98,45,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    border-radius: 1px;
+  }
+
+  .sim-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    letter-spacing: 0.01em;
+  }
+
+  .sim-sub {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted-light);
+    margin-top: 2px;
+  }
+
+  .sim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+
+  .sim-control label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .sim-control input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+    cursor: pointer;
+    height: 2px;
+  }
+
+  .sim-control .val {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--accent);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 28px 0;
+    margin-top: 24px;
+  }
+
+  .footer-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-text {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted-light);
+    line-height: 2;
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .footer-logo {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-style: italic;
+    color: var(--muted);
+  }
+
+  .footer-tag {
+    font-family: var(--mono);
+    font-size: 9px;
+    color: var(--accent);
+    border: 1px solid rgba(196,98,45,0.3);
+    padding: 3px 10px;
+    letter-spacing: 0.12em;
+    border-radius: 1px;
+  }
+
+  /* Animate in */
+  .sku-row { animation: fadeUp 0.5s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .sku-row:nth-child(1) { animation-delay: 0.05s; }
+  .sku-row:nth-child(2) { animation-delay: 0.10s; }
+  .sku-row:nth-child(3) { animation-delay: 0.15s; }
+  .sku-row:nth-child(4) { animation-delay: 0.20s; }
+  .sku-row:nth-child(5) { animation-delay: 0.25s; }
+  .sku-row:nth-child(6) { animation-delay: 0.30s; }
+  .sku-row:nth-child(7) { animation-delay: 0.35s; }
+  .sku-row:nth-child(8) { animation-delay: 0.40s; }
+
+  .stat { animation: fadeUp 0.5s ease both; }
+  .stat:nth-child(1) { animation-delay: 0.0s; }
+  .stat:nth-child(2) { animation-delay: 0.08s; }
+  .stat:nth-child(3) { animation-delay: 0.16s; }
+  .stat:nth-child(4) { animation-delay: 0.24s; }
+
+  .model-note {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--muted-light);
+    padding: 12px 28px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  @media (max-width: 1100px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: repeat(2,1fr); }
+    .sim-grid { grid-template-columns: repeat(2,1fr); }
+    .sku-row { grid-template-columns: 2fr 60px 80px 1fr; }
+    .sku-row > *:last-child { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-wordmark">
+          <div class="logo-tag">AI-Native · v2.1</div>
+          <h1>SquareFlow</h1>
+        </div>
+        <div class="logo-divider"></div>
+        <div class="logo-sub">Inventory Intelligence Layer</div>
+      </div>
+      <div class="header-meta">
+        <div><span class="live-dot"></span>MODEL ACTIVE — 847ms last inference</div>
+        <div>Store: Flagship Michigan Ave · Scan: 09:15 UTC · 30 EPCs processed</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stats bar -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-label">Critical Risk SKUs</div>
+      <div class="stat-value danger" id="stat-critical">3</div>
+      <div class="stat-sub">≥80% stockout probability</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Elevated Risk SKUs</div>
+      <div class="stat-value warn" id="stat-elevated">4</div>
+      <div class="stat-sub">40–79% stockout probability</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Healthy SKUs</div>
+      <div class="stat-value ok" id="stat-healthy">7</div>
+      <div class="stat-sub">&lt;40% stockout probability</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg. Hours to Stockout</div>
+      <div class="stat-value accent" id="stat-hours">18.4h</div>
+      <div class="stat-sub">across critical SKUs</div>
+    </div>
+  </div>
+
+  <!-- Main grid -->
+  <div class="main-grid">
+
+    <!-- Left: SKU table -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><span>SKU Risk</span> · Stockout Probability Engine</div>
+        <span class="panel-badge badge-accent">AI-SCORED</span>
+      </div>
+
+      <div class="sku-table">
+        <div class="sku-row header-row">
+          <div>Product</div>
+          <div>Stock</div>
+          <div>Velocity</div>
+          <div>Risk Score</div>
+          <div>Action</div>
+        </div>
+        <!-- rows injected by JS -->
+        <div id="sku-rows"></div>
+      </div>
+
+      <div class="model-note">
+        ↑ Risk score = weighted model combining sell velocity (0.45), current stock (0.35), and lead time (0.20) · Click any row to inspect AI reasoning
+      </div>
+    </div>
+
+    <!-- Right: Detail panel -->
+    <div class="panel detail-panel" id="detail-panel">
+      <div class="panel-header">
+        <div class="panel-title"><span>AI</span> · Risk Inspection</div>
+        <span class="panel-badge badge-accent" id="detail-badge">SELECT ROW</span>
+      </div>
+
+      <div class="detail-content" id="detail-content">
+        <div class="detail-empty">
+          <div class="arrow">←</div>
+          <div>Select a SKU to inspect<br>the model's reasoning</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simulator -->
+  <div class="simulator">
+    <div class="sim-header">
+      <div class="sim-icon">⚡</div>
+      <div>
+        <div class="sim-title">What-If Simulator</div>
+        <div class="sim-sub">Adjust signals below — risk scores update live across all SKUs</div>
+      </div>
+    </div>
+    <div class="sim-grid">
+      <div class="sim-control">
+        <label>Sales Velocity Multiplier</label>
+        <input type="range" id="sim-velocity" min="0.5" max="3" step="0.1" value="1">
+        <div class="val" id="sim-velocity-val">1.0× baseline</div>
+      </div>
+      <div class="sim-control">
+        <label>Replenishment Lead Time (hrs)</label>
+        <input type="range" id="sim-lead" min="4" max="72" step="2" value="24">
+        <div class="val" id="sim-lead-val">24 hrs</div>
+      </div>
+      <div class="sim-control">
+        <label>Safety Stock Buffer</label>
+        <input type="range" id="sim-buffer" min="0" max="5" step="1" value="1">
+        <div class="val" id="sim-buffer-val">1 unit</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Footer -->
+<div class="container">
+  <footer>
+    <div class="footer-inner">
+      <div class="footer-text">
+        <div>RFID ↔ Square Inventory Sync · AI-Native Architecture</div>
+        <div>Risk model: weighted multi-signal scoring · No external API · Pure JavaScript</div>
+      </div>
+      <div class="footer-brand">
+        <div class="footer-logo">SquareFlow</div>
+        <div class="footer-tag">PORTFOLIO PROJECT</div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script>
+// =============================================================================
+// DATA — Mock inventory state (simulates what middleware receives from iD Cloud)
+// =============================================================================
+const SKUS = [
+  {
+    id: "BJM-001-BLU-M",
+    name: "Classic Denim Jacket",
+    variant: "Blue / M",
+    stock: 3,
+    floorStock: 2,
+    stockroomStock: 1,
+    baseVelocity: 1.8,    // units sold per day at baseline
+    leadTime: 24,         // hours to replenishment
+    historicalAvg: 4.2,   // avg stock at this time of week
+    dayOfWeekFactor: 1.3, // Friday multiplier
+  },
+  {
+    id: "LGG-330-BLK-S",
+    name: "High-Waist Leggings",
+    variant: "Black / S",
+    stock: 2,
+    floorStock: 2,
+    stockroomStock: 0,
+    baseVelocity: 2.4,
+    leadTime: 24,
+    historicalAvg: 5.1,
+    dayOfWeekFactor: 1.4,
+  },
+  {
+    id: "CNO-210-GRY-XL",
+    name: "Oversized Knit Cardigan",
+    variant: "Grey / XL",
+    stock: 1,
+    floorStock: 1,
+    stockroomStock: 0,
+    baseVelocity: 0.9,
+    leadTime: 36,
+    historicalAvg: 2.8,
+    dayOfWeekFactor: 1.1,
+  },
+  {
+    id: "SWE-502-CRM-M",
+    name: "Ribbed Crew Sweater",
+    variant: "Cream / M",
+    stock: 1,
+    floorStock: 1,
+    stockroomStock: 0,
+    baseVelocity: 1.2,
+    leadTime: 24,
+    historicalAvg: 3.0,
+    dayOfWeekFactor: 1.2,
+  },
+  {
+    id: "WTS-044-WHT-XS",
+    name: "Linen Wrap Top",
+    variant: "White / XS",
+    stock: 2,
+    floorStock: 2,
+    stockroomStock: 0,
+    baseVelocity: 1.1,
+    leadTime: 18,
+    historicalAvg: 2.5,
+    dayOfWeekFactor: 1.0,
+  },
+  {
+    id: "BJM-001-BLK-S",
+    name: "Classic Denim Jacket",
+    variant: "Black / S",
+    stock: 2,
+    floorStock: 2,
+    stockroomStock: 0,
+    baseVelocity: 0.7,
+    leadTime: 24,
+    historicalAvg: 2.0,
+    dayOfWeekFactor: 0.9,
+  },
+  {
+    id: "WTS-044-WHT-M",
+    name: "Linen Wrap Top",
+    variant: "White / M",
+    stock: 2,
+    floorStock: 1,
+    stockroomStock: 1,
+    baseVelocity: 0.8,
+    leadTime: 18,
+    historicalAvg: 3.0,
+    dayOfWeekFactor: 1.0,
+  },
+  {
+    id: "BJM-001-BLU-L",
+    name: "Classic Denim Jacket",
+    variant: "Blue / L",
+    stock: 4,
+    floorStock: 2,
+    stockroomStock: 2,
+    baseVelocity: 1.5,
+    leadTime: 24,
+    historicalAvg: 4.5,
+    dayOfWeekFactor: 1.1,
+  },
+  {
+    id: "WTS-044-WHT-S",
+    name: "Linen Wrap Top",
+    variant: "White / S",
+    stock: 3,
+    floorStock: 2,
+    stockroomStock: 1,
+    baseVelocity: 1.3,
+    leadTime: 18,
+    historicalAvg: 3.5,
+    dayOfWeekFactor: 1.1,
+  },
+  {
+    id: "CNO-210-GRY-M",
+    name: "Oversized Knit Cardigan",
+    variant: "Grey / M",
+    stock: 2,
+    floorStock: 2,
+    stockroomStock: 0,
+    baseVelocity: 0.6,
+    leadTime: 36,
+    historicalAvg: 2.2,
+    dayOfWeekFactor: 1.0,
+  },
+  {
+    id: "LGG-330-BLK-M",
+    name: "High-Waist Leggings",
+    variant: "Black / M",
+    stock: 2,
+    floorStock: 1,
+    stockroomStock: 1,
+    baseVelocity: 1.9,
+    leadTime: 24,
+    historicalAvg: 4.0,
+    dayOfWeekFactor: 1.3,
+  },
+  {
+    id: "SWE-502-CRM-S",
+    name: "Ribbed Crew Sweater",
+    variant: "Cream / S",
+    stock: 2,
+    floorStock: 2,
+    stockroomStock: 0,
+    baseVelocity: 1.0,
+    leadTime: 24,
+    historicalAvg: 2.8,
+    dayOfWeekFactor: 1.1,
+  },
+  {
+    id: "CNO-210-GRY-L",
+    name: "Oversized Knit Cardigan",
+    variant: "Grey / L",
+    stock: 3,
+    floorStock: 2,
+    stockroomStock: 1,
+    baseVelocity: 0.8,
+    leadTime: 36,
+    historicalAvg: 3.2,
+    dayOfWeekFactor: 1.0,
+  },
+  {
+    id: "LGG-330-BLK-L",
+    name: "High-Waist Leggings",
+    variant: "Black / L",
+    stock: 1,
+    floorStock: 1,
+    stockroomStock: 0,
+    baseVelocity: 1.4,
+    leadTime: 24,
+    historicalAvg: 3.0,
+    dayOfWeekFactor: 1.2,
+  },
+];
+
+// =============================================================================
+// AI SCORING ENGINE
+// The core model — weights three signals into a 0–100 risk score
+// =============================================================================
+function scoreRisk(sku, sim) {
+  const velocity = sku.baseVelocity * sku.dayOfWeekFactor * sim.velocityMult;
+  const effectiveStock = Math.max(0, sku.stock - sim.buffer);
+  const leadTime = sim.leadTime;
+
+  // Signal 1: Velocity signal (0–1)
+  // How fast is this SKU burning relative to what's on hand?
+  const hoursOfStock = effectiveStock > 0 ? (effectiveStock / velocity) * 24 : 0;
+  const velocitySignal = Math.min(1, leadTime / Math.max(hoursOfStock, 0.1));
+
+  // Signal 2: Stock signal (0–1)
+  // How depleted vs. historical average?
+  const stockSignal = Math.min(1, 1 - (sku.stock / Math.max(sku.historicalAvg, 1)));
+
+  // Signal 3: Lead time pressure (0–1)
+  // If we ordered now, would it arrive in time?
+  const leadPressure = Math.min(1, leadTime / Math.max(hoursOfStock, 1));
+
+  // Weighted combination — these weights are the "model"
+  const raw = (velocitySignal * 0.45) + (stockSignal * 0.35) + (leadPressure * 0.20);
+  const score = Math.round(Math.min(100, Math.max(0, raw * 110)));
+
+  return {
+    score,
+    velocity: velocity.toFixed(1),
+    hoursOfStock: hoursOfStock.toFixed(1),
+    velocitySignal: (velocitySignal * 100).toFixed(0),
+    stockSignal: (stockSignal * 100).toFixed(0),
+    leadPressure: (leadPressure * 100).toFixed(0),
+  };
+}
+
+function riskLevel(score) {
+  if (score >= 80) return { label: 'CRITICAL', cls: 'danger', badgeCls: 'badge-danger' };
+  if (score >= 40) return { label: 'ELEVATED', cls: 'warn', badgeCls: 'badge-warn' };
+  return { label: 'HEALTHY', cls: 'ok', badgeCls: 'badge-ok' };
+}
+
+function actionText(score, sku, scored) {
+  if (score >= 80) return { text: 'URGENT REORDER', cls: 'badge-danger' };
+  if (score >= 60) return { text: 'REVIEW STOCK', cls: 'badge-warn' };
+  if (score >= 40) return { text: 'MONITOR', cls: 'badge-warn' };
+  return { text: 'NO ACTION', cls: 'badge-ok' };
+}
+
+function generateReasoning(sku, scored, sim) {
+  const level = riskLevel(scored.score);
+  const velocity = parseFloat(scored.velocity);
+  const hours = parseFloat(scored.hoursOfStock);
+
+  let text = '';
+  if (scored.score >= 80) {
+    text = `At the current sell rate of ${velocity} units/day, this SKU has approximately ${hours < 24 ? hours + 'h' : Math.round(hours/24) + ' days'} of stock remaining — less than the ${sim.leadTime}h replenishment lead time. The model weights velocity (${scored.velocitySignal}%) and lead time pressure (${scored.leadPressure}%) as primary drivers. Immediate action is required to avoid a stockout.`;
+  } else if (scored.score >= 40) {
+    text = `Stock level is below historical average for this SKU at this point in the week (currently ${sku.stock} vs. avg ${sku.historicalAvg}). At ${velocity} units/day, the ${sim.leadTime}h lead time creates moderate risk. The model flags this as elevated — worth monitoring and pre-staging stockroom units to the floor.`;
+  } else {
+    text = `Stock levels are adequate relative to the current sell rate of ${velocity} units/day. With ${hours}h of runway and a ${sim.leadTime}h lead time, the model estimates low stockout probability. No action required at this time.`;
+  }
+  return text;
+}
+
+function generateRecommendation(sku, scored, sim) {
+  if (scored.score >= 80) {
+    return {
+      action: `Initiate emergency replenishment or inter-store transfer`,
+      detail: `Check nearby locations for available units. If transferring, allow ${sim.leadTime}h. Consider marking low on website to manage demand.`,
+      confidence: 92
+    };
+  }
+  if (scored.score >= 60) {
+    return {
+      action: `Pre-stage stockroom units to floor today`,
+      detail: `${sku.stockroomStock > 0 ? sku.stockroomStock + ' unit(s) in stockroom available to move.' : 'No stockroom buffer — flag for next replenishment order.'} Reorder if not already queued.`,
+      confidence: 78
+    };
+  }
+  if (scored.score >= 40) {
+    return {
+      action: `Include in next scheduled replenishment review`,
+      detail: `Stock is below weekly average. No urgent action, but add to watchlist for next 24h rescan.`,
+      confidence: 65
+    };
+  }
+  return {
+    action: `No action required`,
+    detail: `Model confidence is high that this SKU will not experience stockout within the lead time window.`,
+    confidence: 88
+  };
+}
+
+// =============================================================================
+// STATE
+// =============================================================================
+let selectedId = null;
+let sim = { velocityMult: 1, leadTime: 24, buffer: 1 };
+
+// =============================================================================
+// RENDER
+// =============================================================================
+function getScoredSkus() {
+  return SKUS.map(sku => ({ sku, scored: scoreRisk(sku, sim) }))
+    .sort((a, b) => b.scored.score - a.scored.score);
+}
+
+function updateStats(scored) {
+  const critical = scored.filter(s => s.scored.score >= 80).length;
+  const elevated = scored.filter(s => s.scored.score >= 40 && s.scored.score < 80).length;
+  const healthy = scored.filter(s => s.scored.score < 40).length;
+  const critHours = scored.filter(s => s.scored.score >= 80).map(s => parseFloat(s.scored.hoursOfStock));
+  const avgHours = critHours.length ? (critHours.reduce((a,b)=>a+b,0)/critHours.length).toFixed(1) : '—';
+
+  document.getElementById('stat-critical').textContent = critical;
+  document.getElementById('stat-elevated').textContent = elevated;
+  document.getElementById('stat-healthy').textContent = healthy;
+  document.getElementById('stat-hours').textContent = avgHours + (avgHours !== '—' ? 'h' : '');
+}
+
+function renderRows(scored) {
+  const container = document.getElementById('sku-rows');
+  container.innerHTML = '';
+
+  scored.forEach(({ sku, scored: s }, i) => {
+    const level = riskLevel(s.score);
+    const action = actionText(s.score, sku, s);
+    const row = document.createElement('div');
+    row.className = 'sku-row' + (sku.id === selectedId ? ' selected' : '');
+    row.style.animationDelay = (i * 0.05) + 's';
+    row.innerHTML = `
+      <div>
+        <div class="sku-name">${sku.name}</div>
+        <div class="sku-code">${sku.id} · ${sku.variant}</div>
+      </div>
+      <div class="sku-stock" style="color:var(--${level.cls})">${sku.stock}</div>
+      <div class="sku-velocity" style="color:var(--muted)">${s.velocity}<span style="font-size:10px">/day</span></div>
+      <div class="risk-bar-wrap">
+        <div class="risk-bar-bg">
+          <div class="risk-bar-fill risk-${level.cls === 'danger' ? 'high' : level.cls === 'warn' ? 'med' : 'low'}" style="width:${s.score}%"></div>
+        </div>
+        <div class="risk-pct" style="color:var(--${level.cls})">${s.score}%</div>
+      </div>
+      <div><span class="action-pill ${action.cls}">${action.text}</span></div>
+    `;
+    row.addEventListener('click', () => selectSku(sku.id));
+    container.appendChild(row);
+  });
+}
+
+function selectSku(id) {
+  selectedId = id;
+  renderAll();
+  renderDetail();
+}
+
+function renderDetail() {
+  const content = document.getElementById('detail-content');
+  const badge = document.getElementById('detail-badge');
+
+  if (!selectedId) {
+    badge.textContent = 'SELECT ROW';
+    badge.className = 'panel-badge badge-accent';
+    content.innerHTML = `<div class="detail-empty"><div class="arrow">←</div><div>Select a SKU to inspect<br>the model's reasoning</div></div>`;
+    return;
+  }
+
+  const sku = SKUS.find(s => s.id === selectedId);
+  const scored = scoreRisk(sku, sim);
+  const level = riskLevel(scored.score);
+  const reasoning = generateReasoning(sku, scored, sim);
+  const rec = generateRecommendation(sku, scored, sim);
+
+  badge.textContent = level.label;
+  badge.className = 'panel-badge ' + level.badgeCls;
+
+  content.innerHTML = `
+    <div class="detail-sku-name">${sku.name}</div>
+    <div class="detail-sku-code">${sku.id} · ${sku.variant}</div>
+
+    <div class="risk-score-display">
+      <div class="risk-number" style="color:var(--${level.cls})">${scored.score}</div>
+      <div class="risk-label" style="color:var(--${level.cls})">${level.label} RISK</div>
+    </div>
+
+    <div class="signal-grid">
+      <div class="signal-card">
+        <div class="signal-label">Velocity Signal</div>
+        <div class="signal-value" style="color:var(--accent2)">${scored.velocitySignal}%</div>
+        <div class="signal-sub">${scored.velocity} units/day · weight 0.45</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-label">Stock Depletion</div>
+        <div class="signal-value" style="color:var(--warn)">${scored.stockSignal}%</div>
+        <div class="signal-sub">${sku.stock} of ${sku.historicalAvg} avg · weight 0.35</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-label">Lead Time Pressure</div>
+        <div class="signal-value" style="color:var(--danger)">${scored.leadPressure}%</div>
+        <div class="signal-sub">${sim.leadTime}h lead · weight 0.20</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-label">Hours of Stock</div>
+        <div class="signal-value">${scored.hoursOfStock}h</div>
+        <div class="signal-sub">floor: ${sku.floorStock} · back: ${sku.stockroomStock}</div>
+      </div>
+    </div>
+
+    <div class="reasoning-box">
+      <div class="reasoning-label">// AI REASONING</div>
+      <div class="reasoning-text">${reasoning}</div>
+    </div>
+
+    <div class="recommendation">
+      <div class="rec-label">// RECOMMENDED ACTION</div>
+      <div class="rec-action">${rec.action}</div>
+      <div class="rec-detail">${rec.detail}</div>
+      <div class="confidence-bar">
+        <span class="conf-label">CONFIDENCE</span>
+        <div class="conf-track"><div class="conf-fill" style="width:${rec.confidence}%"></div></div>
+        <span class="conf-pct">${rec.confidence}%</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  const scored = getScoredSkus();
+  updateStats(scored);
+  renderRows(scored);
+}
+
+// =============================================================================
+// SIMULATOR CONTROLS
+// =============================================================================
+document.getElementById('sim-velocity').addEventListener('input', function() {
+  sim.velocityMult = parseFloat(this.value);
+  document.getElementById('sim-velocity-val').textContent = sim.velocityMult.toFixed(1) + '× baseline';
+  renderAll();
+  if (selectedId) renderDetail();
+});
+
+document.getElementById('sim-lead').addEventListener('input', function() {
+  sim.leadTime = parseInt(this.value);
+  document.getElementById('sim-lead-val').textContent = sim.leadTime + ' hrs';
+  renderAll();
+  if (selectedId) renderDetail();
+});
+
+document.getElementById('sim-buffer').addEventListener('input', function() {
+  sim.buffer = parseInt(this.value);
+  document.getElementById('sim-buffer-val').textContent = sim.buffer + ' unit' + (sim.buffer !== 1 ? 's' : '');
+  renderAll();
+  if (selectedId) renderDetail();
+});
+
+// =============================================================================
+// INIT
+// =============================================================================
+renderAll();
+</script>
+</body>
+</html>
